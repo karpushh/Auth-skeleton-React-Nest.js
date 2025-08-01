@@ -35,7 +35,7 @@ export default function Main() {
         });
         setIdeas(response.data);
       } catch (error) {
-        //console.error("Failed to fetch ideas:", error);
+        console.error("Failed to fetch ideas:", error);
       }
     }
   }, [user, accessToken]);
@@ -47,11 +47,16 @@ export default function Main() {
 
   return (
     <div className="min-h-screen w-full bg-neutral-800">
-      <main className="mx-auto flex min-h-screen max-w-[1400px] justify-center bg-neutral-700">
+      <main className="mx-auto flex min-h-screen max-w-[1400px] justify-center bg-neutral-800">
         <div className="mt-50 flex h-fit w-fit flex-col gap-5">
           {showSection === "normal" &&
             (ideas.length > 0 ? (
               <div className="flex flex-col gap-20">
+                <a href="/profile" className="w-full">
+                  <button className="mt-4 cursor-pointer rounded-2xl bg-blue-400 p-3 font-bold text-neutral-100 hover:bg-blue-400/95">
+                    Go to profile
+                  </button>
+                </a>
                 <button
                   onClick={() => setShowSection("Create Idea")}
                   className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[19px] font-bold text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500"
@@ -64,7 +69,12 @@ export default function Main() {
               </div>
             ) : (
               <div className="flex h-fit w-fit flex-col gap-10 text-neutral-200">
-                <div>You dont have any ideas. Click to create one.</div>
+                <a href="/profile" className="w-full">
+                  <button className="mt-4 cursor-pointer rounded-2xl bg-blue-400 p-3 font-bold text-neutral-100 hover:bg-blue-400/95">
+                    Go to profile
+                  </button>
+                </a>
+                <div>You don't have any ideas. Click to create one.</div>
                 <button
                   onClick={() => setShowSection("Create Idea")}
                   className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[19px] font-bold text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500"
@@ -130,15 +140,15 @@ function CreateIdeaSection({
           <h1 className="text-neutral-200">Name</h1>
           <input
             type="text"
-            className="w-100 h-14 rounded-2xl bg-neutral-300 p-1"
+            className="h-14 w-100 rounded-2xl bg-neutral-300 p-1"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-3 p-2">
-          <h1 className="text-neutral-200">Descripton</h1>
+          <h1 className="text-neutral-200">Description</h1>
           <textarea
-            className="w-100 h-30 rounded-2xl bg-neutral-300 p-2"
+            className="h-30 w-100 rounded-2xl bg-neutral-300 p-2"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
