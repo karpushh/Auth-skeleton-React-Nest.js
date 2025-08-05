@@ -8,6 +8,8 @@ import { User } from './entities/user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { IdeasModule } from './ideas/ideas.module';
 import { Idea } from './entities/idea.entity';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -29,11 +31,27 @@ import { Idea } from './entities/idea.entity';
         synchronize: true, // Should be false in production
       }),
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          // Time-to-live: the time window in seconds
+          ttl: 60000,
+          // The maximum number of requests within the TTL window
+          limit: 2,
+        },
+      ],
+    }),
     UsersModule,
     AuthModule,
     IdeasModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
