@@ -11,9 +11,8 @@ import { ProfilePage } from "./pages/profile";
 
 const LoadingScreen = () => {
   return (
-    <div className="flex h-screen w-screen fixed items-center justify-center bg-neutral-800">
-      <div className="text-xl text-white">Loading...</div>
-      {/* Or a fancy spinner component */}
+    <div className="fixed flex h-screen w-screen items-center justify-center bg-neutral-800">
+      {/* <div className="text-xl text-white">Loading...</div> */}
     </div>
   );
 };
