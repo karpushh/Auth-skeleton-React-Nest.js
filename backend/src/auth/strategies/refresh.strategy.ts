@@ -4,8 +4,8 @@ import { Strategy } from 'passport-jwt';
 import { Request } from 'express';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
+import { AuthService } from '../auth.service';
 
 /**
  * Extracts JWT refresh token from the httpOnly cookie.
@@ -30,11 +30,11 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   /**
    * Constructor for RefreshStrategy.
    * @param configService - Service to access environment variables.
-   * @param usersService - Service to interact with user data.
+   * @param authService - Service to interact with user data.
    */
   constructor(
     configService: ConfigService,
-    private usersService: UsersService,
+    private authService: AuthService,
   ) {
     const secret = configService.get<string>('JWT_REFRESH_SECRET');
     if (!secret) {
@@ -69,7 +69,7 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
       );
     }
 
-    const user = await this.usersService.findOne(payload.sub);
+    const user = await this.authService.findOne('id', payload.sub);
 
     // Check if user exists and has a stored hashed refresh token
     if (!user || !user.hashedRefreshToken) {

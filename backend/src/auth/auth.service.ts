@@ -1,104 +1,127 @@
 //auth.service.ts
 import { JwtService } from '@nestjs/jwt';
-import { Injectable } from '@nestjs/common';
-import { UsersService } from 'src/users/users.service';
-import { User } from 'src/entities/user.entity';
-import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import * as bcrypt from 'bcrypt';
+import { Response } from 'express';
+import { Repository } from 'typeorm';
+import { User } from 'src/entities/user.entity';
+import { SignupDto } from './dto/signup.dto';
 
-/**
- * Service for authentication logic, including login, logout, token management, and user validation.
- */
 @Injectable()
 export class AuthService {
-  /**
-   * Constructor for AuthService.
-   * @param usersService - Service to interact with user data.
-   * @param jwtService - Service to handle JWT operations.
-   * @param configService - Service to access environment variables.
-   */
   constructor(
-    private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
   ) {}
 
-  /**
-   * Validates a user by email and password.
-   * Used in LocalStrategy.validate.
-   * @param email - User's email address.
-   * @param pass - User's password.
-   * @returns The user object without password if valid, otherwise null.
-   */
-  async validateUser(email: string, pass: string) {
-    const user = await this.usersService.findOneByEmail(email);
+  async signup(res: Response, userDto: SignupDto) {
+    const existingUser = await this.userRepo.findOne({
+      where: { email: userDto.email },
+    });
 
-    if (user && (await bcrypt.compare(pass, user.password))) {
-      const { password, ...result } = user;
-      return result;
+    if (existingUser) {
+      throw new ConflictException('A user with this email already exists.');
     }
-    return null;
+
+    const hashedPassword = await bcrypt.hash(userDto.password, 10);
+    const user = this.userRepo.create({ ...userDto, password: hashedPassword });
+    await this.userRepo.save(user);
+    const { access_token, refresh_token } = await this.getTokens(user.id);
+    await this.updateUserRefreshToken(user.id, refresh_token);
+    this.setRefreshTokenCookie(res, refresh_token);
+
+    return {
+      access_token: access_token,
+      user: { username: user.username, email: user.email, id: user.id },
+    };
   }
 
-  /**
-   * Generates new access and refresh tokens for a user and updates the stored refresh token.
-   * @param userId - The user's ID.
-   * @returns The new access and refresh tokens.
-   */
-  async refreshTokens(userId: string /* , email: string */) {
-    const tokens = await this.getTokens(userId);
-    await this.updateUserRefreshToken(userId, tokens.refresh_token);
-    return tokens;
+  async login(res: Response, user: User) {
+    const { access_token, refresh_token } = await this.getTokens(user.id);
+    await this.updateUserRefreshToken(user.id, refresh_token);
+    this.setRefreshTokenCookie(res, refresh_token);
+
+    return {
+      access_token,
+      user: {
+        email: user.email,
+        username: user.username,
+        id: user.id,
+      },
+    };
   }
 
-  /**
-   * Logs out the user by removing their stored refresh token.
-   * @param userId - The user's ID.
-   * @returns The result of the user update operation.
-   */
-  async logout(userId: string) {
-    return this.usersService.update(userId, { hashedRefreshToken: null });
+  async logout(res: Response, id: string) {
+    const user = await this.userRepo.findOneBy({ id });
+    res.clearCookie('refresh_token', { path: '/auth/refresh' });
+    if (!user) {
+      throw new Error(`User not found!`);
+    }
+    Object.assign(user, { hashedRefreshToken: null });
+    await this.userRepo.save(user);
+    return;
   }
 
-  /**
-   * Logs in the user and generates access and refresh tokens.
-   * @param user - The user object containing at least the ID.
-   * @returns The access and refresh tokens.
-   */
-  async login(user: Pick<User, 'id' /* | 'email' */>) {
-    const tokens = await this.getTokens(user.id);
-    await this.updateUserRefreshToken(user.id, tokens.refresh_token);
-    return tokens;
+  async findOne(type: 'email' | 'id', value: string) {
+    try {
+      const user = await this.userRepo.findOneBy({ [type]: value });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      return user;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException();
+    }
   }
 
-  /**
-   * Updates the user's stored refresh token with a hashed version.
-   * @param userId - The user's ID.
-   * @param refreshToken - The new refresh token to store.
-   */
   async updateUserRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-    await this.usersService.update(userId, {
+    await this.updateUser(userId, {
       hashedRefreshToken: hashedRefreshToken,
     });
   }
+  async refreshTokens(res: Response, user: User) {
+    const { access_token, refresh_token } = await this.getTokens(user.id);
+    await this.updateUserRefreshToken(user.id, refresh_token);
 
-  /**
-   * Generates access and refresh JWT tokens for a user.
-   * @param userId - The user's ID.
-   * @returns An object containing access_token and refresh_token.
-   */
+    this.setRefreshTokenCookie(res, refresh_token);
+
+    return {
+      access_token,
+      user: {
+        username: user.username,
+        email: user.email,
+        id: user.id,
+      },
+    };
+  }
+
   async getTokens(userId: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId /* , email */ },
+        { sub: userId },
         {
           secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
           expiresIn: '15m',
         },
       ),
       this.jwtService.signAsync(
-        { sub: userId /* , email */ },
+        { sub: userId },
         {
           secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
           expiresIn: '7d',
@@ -110,5 +133,34 @@ export class AuthService {
       access_token: accessToken,
       refresh_token: refreshToken,
     };
+  }
+
+  private setRefreshTokenCookie(res: Response, refreshToken: string) {
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development', // Use secure cookies in production
+      sameSite: 'strict',
+      path: '/auth/refresh', // Important: Limit cookie scope
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    });
+  }
+
+  private async updateUser(id: string, attrs: Partial<User>) {
+    const user = await this.userRepo.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    Object.assign(user, attrs);
+    return this.userRepo.save(user);
+  }
+
+  async validateUser(email: string, pass: string) {
+    const user = await this.findOne('email', email);
+
+    if (user && (await bcrypt.compare(pass, user.password))) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
   }
 }

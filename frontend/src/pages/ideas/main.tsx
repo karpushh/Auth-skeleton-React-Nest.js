@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useAuth } from "../../Auth/useAuth";
 import api from "../../api/axios";
+import { Link } from "react-router-dom";
 
 interface IIdea {
   id: string;
@@ -46,17 +47,17 @@ export default function Main() {
   }, [fetchIdeas]);
 
   return (
-    <div className="min-h-screen w-full bg-neutral-800">
+    <div className="fixed min-h-screen w-full bg-neutral-800">
       <main className="mx-auto flex min-h-screen max-w-[1400px] justify-center bg-neutral-800">
         <div className="mt-50 flex h-fit w-fit flex-col gap-5">
           {showSection === "normal" &&
             (ideas.length > 0 ? (
               <div className="flex flex-col gap-20">
-                <a href="/profile" className="w-full">
+                <Link to="/profile" className="w-full">
                   <button className="mt-4 cursor-pointer rounded-2xl bg-blue-400 p-3 font-bold text-neutral-100 hover:bg-blue-400/95">
                     Go to profile
                   </button>
-                </a>
+                </Link>
                 <button
                   onClick={() => setShowSection("Create Idea")}
                   className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[19px] font-bold text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500"
@@ -89,7 +90,6 @@ export default function Main() {
               onIdeaCreated={fetchIdeas}
             />
           )}
-          <div></div>
         </div>
       </main>
     </div>
@@ -133,22 +133,22 @@ function CreateIdeaSection({
   };
 
   return (
-    <div className="flex flex-col gap-5 rounded-3xl border border-neutral-500 p-10">
-      <div className="flex h-fit w-fit flex-col items-center">
+    <div className="flex flex-col gap-5 rounded-3xl py-10 bg-black/20  p-2 w-screen min-w-60 max-w-200 h-fit">
+      <div className="flex h-fit w-full flex-col items-center">
         <h1 className="text-2xl font-bold text-neutral-300">IDEA</h1>
-        <div className="flex flex-col gap-3 p-2">
+        <div className="flex flex-col gap-3 p-2 w-full">
           <h1 className="text-neutral-200">Name</h1>
           <input
             type="text"
-            className="h-14 w-100 rounded-2xl bg-neutral-300 p-1"
+            className="h-14 w-full rounded-2xl bg-neutral-400 p-1 text-black/80 "
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-3 p-2">
+        <div className="flex flex-col gap-3 p-2 w-full">
           <h1 className="text-neutral-200">Description</h1>
           <textarea
-            className="h-30 w-100 rounded-2xl bg-neutral-300 p-2"
+            className="h-30 w-full rounded-2xl bg-neutral-400 p-2 text-black/80"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
@@ -156,14 +156,14 @@ function CreateIdeaSection({
       </div>
       <button
         onClick={createIdea}
-        className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[18px] text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500"
+        className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[18px] text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500 w-full"
         disabled={isLoading}
       >
         create
       </button>
       <button
         onClick={() => setShowSection("normal")}
-        className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[18px] text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500"
+        className="cursor-pointer rounded-2xl bg-blue-400 p-2 px-8 text-[18px] text-neutral-100 hover:bg-blue-400/90 disabled:bg-blue-500 w-full"
       >
         get back
       </button>

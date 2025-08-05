@@ -6,8 +6,12 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { User } from 'src/entities/user.entity';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -20,6 +24,11 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async findAll() {
     return await this.usersService.findAll();
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  async getProfile(@Request() req: { user: User }) {
+    return await this.usersService.findOne(req.user.id);
   }
 
   @Get(':id')

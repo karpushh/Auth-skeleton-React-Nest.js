@@ -12,11 +12,11 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({
+      stopAtFirstError: true,
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
