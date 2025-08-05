@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import {
   ConflictException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -44,7 +43,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('A user with this email already exists.');
+      throw new ConflictException('An user with this email already exists.');
     }
 
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
@@ -99,32 +98,6 @@ export class AuthService {
     Object.assign(user, { hashedRefreshToken: null });
     await this.userRepo.save(user);
     return;
-  }
-
-  /**
-   * Finds a single user by a specified field (email or id).
-   * @param type - The field to search by ('email' or 'id').
-   * @param value - The value to match.
-   * @returns The found user object.
-   * @throws {NotFoundException} If no user is found.
-   * @throws {InternalServerErrorException} For any other errors.
-   */
-  async findOne(type: 'email' | 'id', value: string) {
-    try {
-      const user = await this.userRepo.findOneBy({ [type]: value });
-
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      return user;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException();
-    }
   }
 
   /**
@@ -231,12 +204,33 @@ export class AuthService {
    * @returns The user object without the password if validation is successful, otherwise null.
    */
   async validateUser(email: string, pass: string) {
-    const user = await this.findOne('email', email);
+    const user = await this.userRepo.findOneBy({ email });
+
+    /* if (!user) {
+      throw new NotFoundException("User don't exist");
+    } */
 
     if (user && (await bcrypt.compare(pass, user.password))) {
       const { password, ...result } = user;
       return result;
     }
     return null;
+  }
+
+  /**
+   * Finds a single user by a specified field (email or id).
+   * @param type - The field to search by ('email' or 'id').
+   * @param value - The value to match.
+   * @returns The found user object.
+   * @throws {NotFoundException} If no user is found.
+   */
+  async findOne(type: 'email' | 'id', value: string) {
+    const user = await this.userRepo.findOneBy({ [type]: value });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 }

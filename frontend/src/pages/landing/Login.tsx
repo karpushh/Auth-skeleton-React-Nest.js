@@ -22,6 +22,9 @@ export default function LoginSection() {
         email: email,
         password: password,
       };
+      if (email.length < 1 || password.length < 1) {
+        throw new Error("Please fill the required fields.");
+      }
 
       await login(loginData);
       navigate("/profile");
@@ -45,7 +48,7 @@ export default function LoginSection() {
               Email
             </h1>
             <input
-              className="h-13 w-80 rounded-2xl border border-black/20 bg-neutral-100 text-black/85 p-2"
+              className="h-13 w-80 rounded-2xl border border-black/20 bg-neutral-100 p-2 text-black/85"
               type="text"
               placeholder="email"
               name="email"
