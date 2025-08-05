@@ -8,9 +8,10 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth.service';
 
 /**
- * Extracts JWT refresh token from the httpOnly cookie.
- * @param req The incoming request object.
- * @returns The refresh token string or null.
+ * Extracts the refresh token from the 'refresh_token' cookie in an HTTP request.
+ * This function is designed to be used with Passport's `jwtFromRequest` option.
+ * @param req - The Express request object.
+ * @returns The refresh token string if found and is a string, otherwise null.
  */
 const cookieExtractor = (req: Request): string | null => {
   // Use optional chaining and a type check for type safety.
@@ -22,17 +23,19 @@ const cookieExtractor = (req: Request): string | null => {
 };
 
 /**
- * Passport strategy for validating JWT refresh tokens sent via httpOnly cookies.
- * Uses the 'jwt-refresh' strategy name.
+ * Implements the JWT refresh token strategy for Passport.
+ * This strategy is responsible for validating a user's refresh token, which is
+ * expected to be in an HTTP-only cookie. It ensures the token is valid, not
+ * compromised, and belongs to an existing user.
  */
 @Injectable()
 export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
-  /**
-   * Constructor for RefreshStrategy.
-   * @param configService - Service to access environment variables.
-   * @param authService - Service to interact with user data.
-   */
   constructor(
+    /**
+     * Initializes the refresh token strategy.
+     * @param configService - Service for accessing configuration and environment variables.
+     * @param authService - Service for user-related database operations.
+     */
     configService: ConfigService,
     private authService: AuthService,
   ) {
@@ -53,11 +56,14 @@ export class RefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   }
 
   /**
-   * Validates the refresh token from the request cookie.
-   * @param req - The incoming request object.
-   * @param payload - JWT payload containing user info (e.g., { sub: string, email: string }).
-   * @returns The user object with the refresh token if validation succeeds.
-   * @throws UnauthorizedException if validation fails.
+   * Validates the refresh token payload.
+   * This method is called by Passport after it successfully decodes the JWT.
+   * It verifies that the token from the cookie matches the hashed token stored for the user.
+   * @param req - The Express request object, passed via `passReqToCallback: true`.
+   * @param payload - The decoded JWT payload, containing the user's ID (`sub`).
+   * @returns The user object, augmented with the raw refresh token.
+   * @throws {UnauthorizedException} If the token is missing, the user is not found,
+   * or the token does not match the stored hash.
    */
   async validate(req: Request, payload: { sub: string }) {
     // The cookieExtractor already ran, but we need the raw token from the cookie for comparison.
