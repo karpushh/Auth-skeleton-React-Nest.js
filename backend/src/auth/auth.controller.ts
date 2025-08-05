@@ -12,10 +12,10 @@ import {
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { User } from 'src/entities/user.entity';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { Response } from 'express';
+import { SignupDto } from './dto/signup.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -34,7 +34,7 @@ export class AuthController {
    */
   @Post('signup')
   async signup(
-    @Body() createUserDto: CreateUserDto,
+    @Body() createUserDto: SignupDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.signup(res, createUserDto);

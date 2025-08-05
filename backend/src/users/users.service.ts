@@ -1,13 +1,7 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
-import * as bcrypt from 'bcrypt';
 
 /**
  * Service for user management: create, update, find, and query users.
@@ -24,28 +18,6 @@ export class UsersService {
   ) {}
 
   /**
-   * Creates a new user with hashed password.
-   * @param createUserDto - Data transfer object for creating a user.
-   * @returns The created user entity.
-   * @throws ConflictException if user already exists.
-   */
-  async create(createUserDto: CreateUserDto) {
-    const existingUser = await this.userRepo.findOneBy({
-      email: createUserDto.email,
-    });
-    if (existingUser) {
-      throw new ConflictException('User already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const newUser = this.userRepo.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
-    return this.userRepo.save(newUser);
-  }
-
-  /**
    * Updates user attributes for a given user ID.
    * @param id - The user's ID.
    * @param attrs - Partial user attributes to update.
@@ -58,7 +30,12 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     Object.assign(user, attrs);
-    return this.userRepo.save(user);
+    const updatedUser = await this.userRepo.save(user);
+    return {
+      username: updatedUser.username,
+      email: updatedUser.email,
+      id: updatedUser.id,
+    };
   }
 
   /**
@@ -66,7 +43,13 @@ export class UsersService {
    * @returns Array of user entities.
    */
   async findAll() {
-    return await this.userRepo.find();
+    return await this.userRepo.find({
+      select: {
+        username: true,
+        email: true,
+        id: true,
+      },
+    });
   }
 
   /**
@@ -80,7 +63,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return { ...user }; // RETURNS THE PASSWORD
+    return { username: user.username, email: user.email, id: user.id };
   }
 
   /**
@@ -89,6 +72,10 @@ export class UsersService {
    * @returns The user entity or null if not found.
    */
   async findOneByEmail(email: string) {
-    return await this.userRepo.findOneBy({ email });
+    const user = await this.userRepo.findOneBy({ email });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return { username: user.username, email: user.email, id: user.id };
   }
 }

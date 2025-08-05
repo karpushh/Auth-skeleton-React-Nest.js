@@ -25,6 +25,7 @@ export class UsersController {
   async findAll() {
     return await this.usersService.findAll();
   }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   async getProfile(@Request() req: { user: User }) {
