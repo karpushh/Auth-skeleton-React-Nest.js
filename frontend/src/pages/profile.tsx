@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "../Auth/useAuth";
+import { useAuth } from "@/Auth/useAuth";
 
 export const ProfilePage: React.FC = () => {
   const { user, logout } = useAuth();
