@@ -84,7 +84,9 @@ web_modules/
 
 # Compiled .d.ts files
 *.d.ts
+!vite-env.d.ts
 *.d.ts.map
+!vite-env.d.ts
 
 # TypeScript cache
 *.tsbuildinfo
